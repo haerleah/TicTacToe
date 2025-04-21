@@ -1,0 +1,21 @@
+version: '3.3'
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      TZ: "Europe/Moscow"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/<Enter Database name>"
+      SPRING_DATASOURCE_USER: "<Enter Database user name>"
+      SPRING_DATASOURCE_PASSWORD: "<Enter Database user password>"
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: "<Enter Database name>"
+      POSTGRES_USER: "<Enter Database user name>"
+      POSTGRES_PASSWORD: "<Enter Database user password>"
+    ports:
+      - "15432:5432"

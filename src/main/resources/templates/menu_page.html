@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <script th:src="@{/js/auth.js}" defer></script>
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0 10px;
+            height: 60px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .header .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .header .user-info {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .columns {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .left-column, .right-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: #f7f7f7;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .game-creation-section .radio-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .radio-group div {
+            display: flex;
+            align-items: center;
+        }
+
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+            accent-color: #4CAF50;
+        }
+
+        .radio-group label {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .game-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .online-games-section .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .online-games-section h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .history-section .card-body {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .leaders-section .card-body {
+            padding: 20px;
+        }
+
+        .leaders-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 110%;
+            left: 0;
+            right: 0;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        #leadersTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #leadersTable th, #leadersTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        #leadersTable th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .linkDropdown ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .linkDropdown ul li {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            text-align: left;
+            background-color: #fff;
+        }
+
+        .linkDropdown ul li a {
+            text-decoration: none;
+            color: #333;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-left"></div>
+    <div class="header-center">
+        <div class="title">Tic Tac Toe Game</div>
+    </div>
+    <div class="header-right">
+        <span class="user-info" th:if="${login}" th:text="${login}"></span>
+        <button class="btn" id="logout_button">Log out</button>
+    </div>
+</div>
+<div class="container">
+    <div class="columns">
+        <div class="left-column">
+
+            <div class="card game-creation-section">
+                <div class="card-header">Создать игру</div>
+                <div class="card-body">
+                    <form th:action="@{/new}" method="get">
+                        <div class="radio-group">
+                            <div>
+                                <input type="radio" id="cross" name="mark" value="cross" checked/>
+                                <label for="cross">X</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="zero" name="mark" value="zero"/>
+                                <label for="zero">O</label>
+                            </div>
+                        </div>
+                        <div class="game-buttons">
+                            <button type="submit" name="type" value="bot" class="btn">
+                                Новая игра (против бота)
+                            </button>
+                            <button type="submit" name="type" value="online" class="btn">
+                                Создать онлайн игру
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card online-games-section">
+                <div class="card-header">Присоединиться к игре</div>
+                <div class="card-body">
+                    <div class="header-row" style="margin-bottom: 10px">
+                        <h2>Доступные онлайн игры</h2>
+                        <button id="updateGamesBtn" class="btn">↻</button>
+                    </div>
+                    <div class="linkDropdown" style="max-height: 164px; overflow-y: auto">
+                        <ul id="fetch_list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card continue-game-section">
+                <div class="card-header">Продолжить игру</div>
+                <div class="card-body" style="position: relative;">
+                    <div class="linkDropdown" style="max-height: 164px; overflow-y: auto">
+                        <ul id="unfinishedGames"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+
+            <div class="card history-section">
+                <div class="card-header">История игр</div>
+                <div class="card-body" style="position: relative;">
+                    <button id="showHistoryBtn" class="btn">
+                        Посмотреть историю игр
+                    </button>
+                    <div id="historyDropdown" class="dropdown-content linkDropdown">
+                        <ul id="completedGames"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card leaders-section">
+                <div class="card-header">Лидеры</div>
+                <div class="card-body">
+                    <div class="leaders-controls">
+                        <label for="numLeaders">Количество лидеров:</label>
+                        <input type="number" id="numLeaders" min="1" value="5"/>
+                        <button id="showLeadersBtn" class="btn">
+                            Показать
+                        </button>
+                    </div>
+                    <table id="leadersTable">
+                        <thead>
+                        <tr>
+                            <th>Пользователь</th>
+                            <th>Процент побед</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const gameList = document.getElementById("fetch_list");
+    const resumeButton = document.getElementById("resume_button");
+    const completedGamesList = document.getElementById("completedGames");
+    const leadersTableBody = document.getElementById("tableBody");
+    const unfinishedGamesList = document.getElementById("unfinishedGames");
+
+    document.getElementById("updateGamesBtn").addEventListener('click', fetchGameList);
+    document.getElementById("updateGamesBtn").addEventListener('click', updateResumeButton);
+    window.addEventListener('load', fetchGameList);
+    window.addEventListener('load', updateResumeButton);
+    window.addEventListener('load', fetchUnfinishedGameList);
+
+    document.getElementById("logout_button").addEventListener("click", () => {
+        document.cookie = "refresh_token=; path=/; max-age=0";
+        document.cookie = "access_token=; path=/; max-age=0";
+        window.location.href = "/";
+    });
+
+    document.getElementById("showHistoryBtn").addEventListener("click", function (e) {
+        completedGamesList.innerHTML = "";
+        fetch("/completed_games")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(gameData => {
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.href = "/game/" + gameData.game.uuid;
+                    a.textContent = "Игра против " + gameData.opponent
+                        + " от " + gameData.game.creationDate + " (МСК)";
+                    li.appendChild(a);
+                    completedGamesList.appendChild(li);
+                })
+            })
+            .then(() => {
+                const dropdown = document.getElementById("historyDropdown");
+                dropdown.classList.toggle("show");
+                e.stopPropagation();
+            });
+    });
+
+    document.addEventListener("click", () => {
+        const dropdown = document.getElementById("historyDropdown");
+        if (dropdown.classList.contains("show")) {
+            dropdown.classList.remove("show");
+        }
+    });
+
+    document.getElementById("showLeadersBtn").addEventListener("click", () => {
+        leadersTableBody.innerHTML = "";
+        const limit = document.getElementById("numLeaders").value;
+
+        const params = new URLSearchParams();
+        params.append("limit", limit);
+
+        fetch(`/best_players?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(statistic => {
+                    const tr = document.createElement("tr");
+                    const td = document.createElement("td");
+                    const th = document.createElement("th");
+                    th.textContent = statistic.login;
+                    td.textContent = parseFloat(statistic.winPercentage).toFixed(1) + "%";
+                    tr.appendChild(th);
+                    tr.appendChild(td);
+                    leadersTableBody.appendChild(tr);
+                });
+            });
+    });
+
+    function fetchUnfinishedGameList() {
+    fetch("/unfinished_games")
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(gameData => {
+                const li = document.createElement("li");
+                const a = document.createElement("a");
+                a.href = "/game/" + gameData.game.uuid;
+                a.textContent = "Продолжить игру против " + gameData.opponent
+                    + " от " + gameData.game.creationDate + " (МСК)";
+                li.appendChild(a);
+                unfinishedGamesList.appendChild(li);
+            });
+        });
+    }
+
+    function fetchGameList() {
+        gameList.innerHTML = "";
+        fetch("/accessible_multiplayer_games")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(game => {
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.href = "/game/join/" + game.gameId;
+                    a.textContent = "Игра против " + game.login;
+                    li.appendChild(a);
+                    gameList.appendChild(li);
+                });
+            })
+            .catch(error => console.log(error));
+    }
+
+    function updateResumeButton() {
+        fetch("/has_online_game")
+            .then(response => response.json())
+            .then(result => {
+                if (result === true) {
+                    resumeButton.style.display = "block";
+                } else {
+                    resumeButton.style.display = "none";
+                }
+            })
+            .catch(error => console.log("Error while fetching online game status: " + error));
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <script th:src="@{/js/auth.js}" defer></script>
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .title {
+            font-size: 40px;
+            margin: 10px 0 20px 0;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        form div {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: inline-block;
+            width: 80px;
+        }
+
+        input {
+            padding: 5px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 3px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .dialog {
+            border: none;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="title">Tic Tac Toe Game</div>
+
+    <form th:action="@{/auth}" th:object="${jwtRequest}" method="post">
+        <div>
+            <label for="login">Логин:</label>
+            <input type="text" id="login" th:field="*{login}" required/>
+        </div>
+        <div>
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" th:field="*{password}" required/>
+        </div>
+
+        <button type="submit" th:formaction="@{/auth/register}" name="action" value="sign_up">
+            Зарегистрироваться
+        </button>
+        <button type="submit" th:formaction="@{/auth/login}" id="loginButton" value="sign_in">
+            Войти
+        </button>
+    </form>
+
+    <div id="menu_button" style="display:none">
+        <form th:action="@{/game_menu}" method="get">
+            <button type="submit" style="width: 300px; height: 70px; font-size: 25px;">
+                Перейти в меню
+            </button>
+        </form>
+    </div>
+
+    <div th:if="${registration_status} == true">
+        <dialog class="dialog" open>
+            Пользователь успешно зарегистрирован!
+        </dialog>
+    </div>
+
+    <div th:if="${registration_status} == false">
+        <dialog class="dialog" open>
+            Такой логин уже занят!
+        </dialog>
+    </div>
+
+    <div id="login_status_block" style="display: none">
+        <div class="dialog">
+            <div id="dialog_text"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const loginButton = document.getElementById("loginButton");
+    const loginBlock = document.getElementById("login_status_block");
+    const loginText = document.getElementById("dialog_text");
+
+    document.addEventListener("tokenApproved", () => {
+        if (getCookie("access_token") != null) {
+            getUserLogin();
+        }
+    })
+
+    loginButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        const login = document.getElementById("login").value;
+        const password = document.getElementById("password").value;
+
+        const params = new URLSearchParams();
+        params.append("login", login);
+        params.append("password", password);
+
+        fetch("/auth/login", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        }).then(response => {
+            if (response.status === 401) {
+                loginBlock.style.display = "block";
+                loginText.textContent = "Неверный логин или пароль!";
+            } else {
+                response.json().then(data => {
+                    document.cookie = "access_token=" + data.accessToken;
+
+                    document.querySelectorAll('dialog').forEach(dialog => {
+                        if (typeof dialog.close === 'function') {
+                            dialog.close();
+                        } else {
+                            dialog.style.display = 'none';
+                        }
+                    });
+                    getUserLogin();
+                });
+            }
+        })
+    })
+
+    function getUserLogin() {
+        return fetch("user_data", {
+            method: "GET",
+            credentials: "include"
+        })
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById("menu_button").style.display = "block";
+                document.getElementById("login_status_block").style.display = "block";
+                document.getElementById("dialog_text").textContent = data.login + ", вы успешно авторизованы!";
+            });
+    }
+</script>
+
+</body>
+</html>
